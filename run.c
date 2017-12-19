@@ -155,10 +155,12 @@ void* m_realloc(void* ptr, size_t size){
 	size = (size+3)/4*4;
 	x->free = 0;
 
-	if((x->next)->free == 1){
-		x->size += (x->next)->size + META_SIZE;
-		x->next = (x->next)->next;
-		x->next = 0;
+	if((x->next) !=0){
+		if((x->next)->free == 1){
+			x->size += (x->next)->size + META_SIZE;
+			x->next = (x->next)->next;
+			x->next = 0;
+		}
 	}
 
 	if(x->size > size){
@@ -179,7 +181,9 @@ void* m_realloc(void* ptr, size_t size){
 	}
 	else if((x->size) < size){
 		x->free = 1;
-		// make new thing like m_malloc
+		p_meta temp = m_malloc(size);
+		strcpy(temp, ptr);
+		return temp;
 	}
 	else return ptr;
 }
