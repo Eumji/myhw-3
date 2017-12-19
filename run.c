@@ -78,7 +78,7 @@ void *m_malloc(size_t size) {
 
 	p_meta find;
 
-	size += (size&3) ? 4-(size&3) : 0;
+	size = ((size+3)/4)*4;
 
 	find = find_meta(end, size);
 
@@ -101,6 +101,16 @@ void *m_malloc(size_t size) {
 		}
 
 		find->size -= size + META_SIZE;
+
+		if(list->next != 0){
+			if((list->next)->free == 1){
+				list->size += (list->next)->size + META_SIZE;
+				list->next = 
+
+					x->size += (x->next)->size + META_SIZE;
+					x->next = (x->next)->next;
+			}
+		}
 
 		//TODO : MERGING IF NEXT THING IS FREE
 
@@ -127,7 +137,7 @@ void *m_malloc(size_t size) {
 
 		list->free = 0;
 		list->next = 0;
-		list->size = size + META_SIZE;
+		list->size = size;
 		last = list;
 
 		end += size + META_SIZE;
@@ -137,9 +147,53 @@ void *m_malloc(size_t size) {
 }
 
 void m_free(void *ptr) {
+	p_meta x = ptr - META_SIZE;
 
+	ptr = 0;
+
+	x->free = 1;
+
+	if(x->prev != 0){
+		if(x->free == 1){
+			(x->prev)->size += x->size + META_SIZE;
+			(x->prev)->next = x->next;
+			x = x->prev;
+		}
+	}
+
+
+	if(x->next != 0){
+		if(x->free == 1){
+			x->size += (x->next)->size + META_SIZE;
+			x->next = (x->next)->next;
+		}
+	}
+
+	// totally empty
+	if(x->next == 0 && x->prev == 0)
+		end = last = base;
 }
 
 void* m_realloc(void* ptr, size_t size){
+	memset(find, 0, ptr + size);
+	find->free = 0;
+
+	// if exist rest 
+	if(find->size != size + META_SIZE){
+		p_meta list = find + size + META_SIZE;
+		list->free = 1;
+		list->next = find->next;
+		list->prev = find;
+		list->size = (find->size) - size - META_SIZE;
+		list->next = find->next;
+	}
+
+	find->size -= size + META_SIZE;
+
+	//TODO : MERGING IF NEXT THING IS FREE
+
+	return find->data;
+
+
 }
 
