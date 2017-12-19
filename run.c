@@ -85,35 +85,7 @@ void *m_malloc(size_t size) {
 	// find proper place
 
 	if(find != 0){
-
-		// fill 0
-		memset(find, 0, size + META_SIZE);
-		find->free = 0;
-
-		// if exist rest 
-		if(find->size != size + META_SIZE){
-			p_meta list = find + size + META_SIZE;
-			list->free = 1;
-			list->next = find->next;
-			list->prev = find;
-			list->size = (find->size) - size - META_SIZE;
-			list->next = find->next;
-		}
-
-		find->size -= size + META_SIZE;
-
-		if(list->next != 0){
-			if((list->next)->free == 1){
-				list->size += (list->next)->size + META_SIZE;
-				list->next = 
-
-					x->size += (x->next)->size + META_SIZE;
-					x->next = (x->next)->next;
-			}
-		}
-
-		//TODO : MERGING IF NEXT THING IS FREE
-
+		m_realloc(find->data, size);
 		return find->data;
 	}
 
@@ -154,7 +126,7 @@ void m_free(void *ptr) {
 	x->free = 1;
 
 	if(x->prev != 0){
-		if(x->free == 1){
+		if((x->prev)->free == 1){
 			(x->prev)->size += x->size + META_SIZE;
 			(x->prev)->next = x->next;
 			x = x->prev;
@@ -163,7 +135,7 @@ void m_free(void *ptr) {
 
 
 	if(x->next != 0){
-		if(x->free == 1){
+		if((x->next)->free == 1){
 			x->size += (x->next)->size + META_SIZE;
 			x->next = (x->next)->next;
 		}
@@ -175,25 +147,35 @@ void m_free(void *ptr) {
 }
 
 void* m_realloc(void* ptr, size_t size){
-	memset(find, 0, ptr + size);
-	find->free = 0;
+	p_meta x = ptr - META_SIZE;
+	size = (size+3)/4*4;
+	x->free = 0;
 
-	// if exist rest 
-	if(find->size != size + META_SIZE){
-		p_meta list = find + size + META_SIZE;
-		list->free = 1;
-		list->next = find->next;
-		list->prev = find;
-		list->size = (find->size) - size - META_SIZE;
-		list->next = find->next;
+	if((x->next)->free == 1){
+		x->size += (x->next)->size + META_SIZE;
+		x->next = (x->next)->next;
+		x->next = 0;
 	}
 
-	find->size -= size + META_SIZE;
+	if(x->size < size){
+		// divide if rest thing is bigger than META_SIZE
 
-	//TODO : MERGING IF NEXT THING IS FREE
+		if(x->size - size > META_SIZE){
+			p_meta list = x + size + META_SIZE;
 
-	return find->data;
+			list->prev = x;
+			list->size = (x->size) - size - META_SIZE;
+			list->next = x->next;
 
-
+			x->next = list;
+			x->size = size;
+		}
+		else return x->data;
+	}
+	else if((x->size) < size){
+		x->free = 1;
+		// make new thing like m_malloc
+	}
+	else return ptr;
 }
 
