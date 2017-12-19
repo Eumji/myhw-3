@@ -133,11 +133,15 @@ void m_free(void *ptr) {
 		}
 	}
 
-
 	if(x->next != 0){
 		if((x->next)->free == 1){
 			x->size += (x->next)->size + META_SIZE;
 			x->next = (x->next)->next;
+		}
+	}
+	else{
+		if(x->prev != 0){
+			(x->prev)->next = 0;
 		}
 	}
 
@@ -157,12 +161,13 @@ void* m_realloc(void* ptr, size_t size){
 		x->next = 0;
 	}
 
-	if(x->size < size){
+	if(x->size > size){
 		// divide if rest thing is bigger than META_SIZE
 
 		if(x->size - size > META_SIZE){
 			p_meta list = x + size + META_SIZE;
 
+			list->free = 1;
 			list->prev = x;
 			list->size = (x->size) - size - META_SIZE;
 			list->next = x->next;
